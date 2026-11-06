@@ -29,8 +29,8 @@ Thumbs.db
 *.log
 
 # Dataset
-leaves/
-augmented_directory/
+# leaves/
+# augmented_directory/
 
 # Model files
 *.h5
