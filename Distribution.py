@@ -1,25 +1,52 @@
 
 import os
 import sys
+import matplotlib.pyplot as plt
 
 directory = sys.argv[1]
 
+apple = {}
+grape = {}
 total_images = 0
 
-for plant in os.listdir(directory):
-    plant_path = os.path.join(directory, plant)
+for disease in os.listdir(directory):
+    path = os.path.join(directory, disease)
 
-    if os.path.isdir(plant_path):
-        print("\nPlant:", plant)
+    if os.path.isdir(path):
+        count = len(os.listdir(path))
 
-        for disease in os.listdir(plant_path):
-            disease_path = os.path.join(plant_path, disease)
+        print(disease, ":", count, "images")
+        total_images += count
 
-            if os.path.isdir(disease_path):
-                images = os.listdir(disease_path)
-                count = len(images)
-
-                print(disease, ":", count, "images")
-                total_images += count
+        if disease.startswith("Apple"):
+            apple[disease] = count
+        elif disease.startswith("Grape"):
+            grape[disease] = count
 
 print("\nTotal images:", total_images)
+
+# Apple
+plt.subplot(1, 2, 1)
+plt.bar(apple.keys(), apple.values())
+plt.title("Apple - Images per disease")
+plt.xticks(rotation=45)
+
+plt.subplot(1, 2, 2)
+plt.pie(apple.values(), labels=apple.keys(), autopct="%1.1f%%")
+plt.title("Apple - Distribution")
+
+plt.tight_layout()
+plt.show()
+
+# Grape
+plt.subplot(1, 2, 1)
+plt.bar(grape.keys(), grape.values())
+plt.title("Grape - Images per disease")
+plt.xticks(rotation=45)
+
+plt.subplot(1, 2, 2)
+plt.pie(grape.values(), labels=grape.keys(), autopct="%1.1f%%")
+plt.title("Grape - Distribution")
+
+plt.tight_layout()
+plt.show()

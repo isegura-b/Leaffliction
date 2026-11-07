@@ -14,7 +14,35 @@ Computer Vision project for leaf disease recognition.
 
 \- Python 3
 
-\- Dataset
+\- Matplotlib
+
+
+
+\## Setup
+
+
+
+Create virtual environment:
+
+
+
+python3 -m venv venv
+
+
+
+Activate virtual environment:
+
+
+
+source venv/bin/activate
+
+
+
+Install dependencies:
+
+
+
+pip install -r requirements.txt
 
 
 
@@ -26,17 +54,21 @@ leaves/
 
 └── images/
 
-&#x20;   ├── Apple/
+&#x20;   ├── Apple\_Black\_rot/
 
-&#x20;   │   ├── Apple\_healthy/
+&#x20;   ├── Apple\_healthy/
 
-&#x20;   │   └── Apple\_scab/
+&#x20;   ├── Apple\_rust/
 
-&#x20;   └── Grapes/
+&#x20;   ├── Apple\_scab/
 
-&#x20;       ├── Grape\_healthy/
+&#x20;   ├── Grape\_Black\_rot/
 
-&#x20;       └── Grape\_black\_rot/
+&#x20;   ├── Grape\_Esca/
+
+&#x20;   ├── Grape\_healthy/
+
+&#x20;   └── Grape\_spot/
 
 
 
@@ -44,13 +76,11 @@ leaves/
 
 
 
-Count images in each disease folder.
+Count images and generate charts:
 
 
 
-Run:
+python3 Distribution.py leaves/images
 
 
-
-python Distribution.py leaves/images
 
