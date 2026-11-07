@@ -1,86 +1,51 @@
-
-
-\# Leaffliction
-
-
+# Leaffliction
 
 Computer Vision project for leaf disease recognition.
 
+## Requirements
 
+- Python 3
+- Matplotlib
 
-\## Requirements
+## Setup
 
+Create a virtual environment:
 
-
-\- Python 3
-
-\- Matplotlib
-
-
-
-\## Setup
-
-
-
-Create virtual environment:
-
-
-
+```bash
 python3 -m venv venv
+```
 
+Activate the virtual environment:
 
-
-Activate virtual environment:
-
-
-
+```bash
 source venv/bin/activate
-
-
+```
 
 Install dependencies:
 
-
-
+```bash
 pip install -r requirements.txt
+```
 
+## Dataset structure
 
-
-\## Dataset structure
-
-
-
+```text
 leaves/
-
 └── images/
+    ├── Apple_Black_rot/
+    ├── Apple_healthy/
+    ├── Apple_rust/
+    ├── Apple_scab/
+    ├── Grape_Black_rot/
+    ├── Grape_Esca/
+    ├── Grape_healthy/
+    └── Grape_spot/
+```
 
-&#x20;   ├── Apple\_Black\_rot/
+## Distribution
 
-&#x20;   ├── Apple\_healthy/
+Count images and generate bar and pie charts for each plant type:
 
-&#x20;   ├── Apple\_rust/
-
-&#x20;   ├── Apple\_scab/
-
-&#x20;   ├── Grape\_Black\_rot/
-
-&#x20;   ├── Grape\_Esca/
-
-&#x20;   ├── Grape\_healthy/
-
-&#x20;   └── Grape\_spot/
-
-
-
-\## Distribution
-
-
-
-Count images and generate charts:
-
-
-
+```bash
 python3 Distribution.py leaves/images
-
-
-
+```
