@@ -27,6 +27,21 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+On Windows (PowerShell), use the virtual environment's Python directly:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe Distribution.py leaves/images
+```
+
+If `python` fails because it points to the Windows App execution alias, create
+the environment using the installed interpreter:
+
+```powershell
+& "$env:LOCALAPPDATA\Python\bin\python.exe" -m venv .venv
+```
+
 ## Dataset structure
 
 ```text
