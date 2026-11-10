@@ -1,2 +1,8 @@
 matplotlib
+<<<<<<< HEAD
 opencv-python
+=======
+torch
+torchvision
+Pillow
+>>>>>>> a7c13d10b71258caef50117be74e1fdc6eb04bdb
