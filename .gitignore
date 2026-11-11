@@ -30,7 +30,8 @@ Thumbs.db
 
 # Dataset
 # leaves/
-# augmented_directory/
+augmented_directory/
+transformations/
 
 # Model files
 *.h5
