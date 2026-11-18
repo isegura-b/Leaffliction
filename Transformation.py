@@ -1,6 +1,6 @@
-
 import cv2
 import os
+import sys
 import argparse
 import matplotlib.pyplot as plt
 
@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 def transform(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # Gaussian blur
-    blur = cv2.GaussianBlur(image, (15, 15), 0)
-
     # Mask
     _, mask = cv2.threshold(
         gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
     )
+
+    # Gaussian blur on binary mask
+    blur = cv2.GaussianBlur(mask, (15, 15), 0)
 
     # Find objects
     contours, _ = cv2.findContours(
@@ -89,25 +89,31 @@ def show_results(image, results):
     plt.show()
 
 
-def save_results(image, results, output_dir, name):
+def save_results(image, results, output_dir, name, mask_only=False):
     os.makedirs(output_dir, exist_ok=True)
 
     for effect, result in results.items():
+        if mask_only and effect != "Mask":
+            continue
+
         filename = name + "_" + effect + ".jpg"
         cv2.imwrite(os.path.join(output_dir, filename), result)
 
-    fig, axis = plt.subplots()
-    histogram(image, axis)
+    if not mask_only:
+        fig, axis = plt.subplots()
+        histogram(image, axis)
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, name + "_Color_histogram.png"))
-    plt.close()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, name + "_Color_histogram.png"))
+        plt.close()
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("image", nargs="?")
 parser.add_argument("-src")
 parser.add_argument("-dst", default="transformations")
+parser.add_argument("-mask", action="store_true",
+                    help="Save only image masks")
 
 args = parser.parse_args()
 
@@ -140,7 +146,7 @@ elif args.src:
         output_dir = os.path.join(destination, relative)
 
         for filename in files:
-            if filename.lower().endswith(".jpg"):
+            if filename.lower().endswith((".jpg", ".jpeg", ".png")):
                 path = os.path.join(current, filename)
                 image = cv2.imread(path)
 
@@ -148,7 +154,7 @@ elif args.src:
                     results = transform(image)
                     name = os.path.splitext(filename)[0]
 
-                    save_results(image, results, output_dir, name)
+                    save_results(image, results, output_dir, name, args.mask)
                     count += 1
 
     print(count, "images processed")
