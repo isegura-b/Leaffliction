@@ -1,57 +1,97 @@
 import cv2
+import numpy as np
 import os
 import sys
 import argparse
 import matplotlib.pyplot as plt
 
 
-def transform(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Mask
+def segment(image):
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).astype(np.int16)
+    warmth = np.clip(lab[:, :, 2] - lab[:, :, 1] + 128, 0, 255)
+    blur = cv2.GaussianBlur(warmth.astype(np.uint8), (5, 5), 0)
     _, mask = cv2.threshold(
-        gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
     )
 
-    # Gaussian blur on binary mask
-    blur = cv2.GaussianBlur(mask, (15, 15), 0)
+    mask = cv2.morphologyEx(
+        mask, cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    )
+    mask = cv2.morphologyEx(
+        mask, cv2.MORPH_CLOSE,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+    )
 
-    # Find objects
     contours, _ = cv2.findContours(
         mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
+    if not contours:
+        return np.zeros_like(mask), None
+
+    contour = max(contours, key=cv2.contourArea)
+    mask = np.zeros_like(mask)
+    cv2.drawContours(mask, [contour], -1, 255, cv2.FILLED)
+    return mask, contour
+
+
+def find_defects(image, mask):
+    green = cv2.GaussianBlur(
+        cv2.cvtColor(image, cv2.COLOR_BGR2LAB)[:, :, 1], (5, 5), 0
+    )
+    limit, _ = cv2.threshold(
+        green[mask > 0].reshape(-1, 1), 0, 255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
+    spots = ((green > limit) & (mask > 0)).astype(np.uint8) * 255
+    spots = cv2.morphologyEx(
+        spots, cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    )
+    contours, _ = cv2.findContours(
+        spots, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+    return [c for c in contours if cv2.contourArea(c) >= 15]
+
+
+def transform(image):
+    mask, contour = segment(image)
+
+    masked = np.full_like(image, 255)
+    masked[mask > 0] = image[mask > 0]
+
+    spots = find_defects(image, mask) if contour is not None else []
+    healthy = mask.copy()
+    cv2.drawContours(healthy, spots, -1, 0, cv2.FILLED)
 
     roi = image.copy()
     analyze = image.copy()
     landmarks = image.copy()
 
-    if contours:
-        contour = max(contours, key=cv2.contourArea)
-
-        # ROI objects
+    if contour is not None:
+        roi[healthy > 0] = (0, 255, 0)
         x, y, w, h = cv2.boundingRect(contour)
-        roi = image[y:y+h, x:x+w]
+        cv2.rectangle(roi, (x, y), (x + w - 1, y + h - 1), (255, 0, 0), 4)
 
-        # Analyze object
-        area = cv2.contourArea(contour)
-        cv2.drawContours(analyze, [contour], -1, (0, 255, 0), 2)
-
+        cv2.drawContours(analyze, spots, -1, (255, 0, 0), 2)
+        cv2.drawContours(analyze, [contour], -1, (255, 0, 255), 3)
+        cx, cy = x + w // 2, y + h // 2
+        cv2.line(analyze, (cx, y), (cx, y + h), (255, 0, 255), 2)
+        cv2.line(analyze, (x, cy), (x + w, cy), (255, 0, 255), 2)
         cv2.putText(
-            analyze, "Area: " + str(int(area)),
-            (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
-            0.7, (0, 0, 255), 2
+            analyze, "Area: " + str(int(cv2.contourArea(contour))),
+            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2
         )
 
-        # Pseudolandmarks
-        step = max(1, len(contour) // 10)
-
-        for point in contour[::step]:
-            x, y = point[0]
-            cv2.circle(landmarks, (int(x), int(y)), 5, (0, 0, 255), -1)
+        for spot in spots:
+            moments = cv2.moments(spot)
+            center = (int(moments["m10"] / moments["m00"]),
+                      int(moments["m01"] / moments["m00"]))
+            cv2.circle(landmarks, center, 4, (0, 128, 255), -1)
 
     return {
-        "Gaussian_blur": blur,
-        "Mask": mask,
+        "Gaussian_blur": cv2.GaussianBlur(healthy, (15, 15), 0),
+        "Mask": masked,
         "ROI_objects": roi,
         "Analyze_object": analyze,
         "Pseudolandmarks": landmarks
