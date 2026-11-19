@@ -57,12 +57,12 @@ def find_defects(image, mask):
 def transform(image):
     mask, contour = segment(image)
 
-    masked = np.full_like(image, 255)
-    masked[mask > 0] = image[mask > 0]
-
     spots = find_defects(image, mask) if contour is not None else []
     healthy = mask.copy()
     cv2.drawContours(healthy, spots, -1, 0, cv2.FILLED)
+
+    masked = np.full_like(image, 255)
+    masked[healthy > 0] = image[healthy > 0]
 
     roi = image.copy()
     analyze = image.copy()
@@ -89,24 +89,44 @@ def transform(image):
                       int(moments["m01"] / moments["m00"]))
             cv2.circle(landmarks, center, 4, (0, 128, 255), -1)
 
-    return {
+    results = {
         "Gaussian_blur": cv2.GaussianBlur(healthy, (15, 15), 0),
         "Mask": masked,
         "ROI_objects": roi,
         "Analyze_object": analyze,
         "Pseudolandmarks": landmarks
     }
+    return results, mask
 
 
-def histogram(image, axis):
-    for channel, color in enumerate(["blue", "green", "red"]):
-        hist = cv2.calcHist([image], [channel], None, [256], [0, 256])
-        axis.plot(hist, color=color)
+CHANNELS = [
+    ("blue", cv2.COLOR_BGR2RGB, 2, "blue"),
+    ("blue-yellow", cv2.COLOR_BGR2LAB, 2, "gold"),
+    ("green", cv2.COLOR_BGR2RGB, 1, "green"),
+    ("green-magenta", cv2.COLOR_BGR2LAB, 1, "magenta"),
+    ("hue", cv2.COLOR_BGR2HSV, 0, "blueviolet"),
+    ("lightness", cv2.COLOR_BGR2LAB, 0, "dimgray"),
+    ("red", cv2.COLOR_BGR2RGB, 0, "red"),
+    ("saturation", cv2.COLOR_BGR2HSV, 1, "cyan"),
+    ("value", cv2.COLOR_BGR2HSV, 2, "orange"),
+]
+
+
+def histogram(image, mask, axis):
+    pixels = max(1, int(np.count_nonzero(mask)))
+
+    for name, conversion, index, color in CHANNELS:
+        channel = cv2.cvtColor(image, conversion)[:, :, index]
+        hist = cv2.calcHist([channel], [0], mask, [256], [0, 256])
+        axis.plot(hist * 100 / pixels, color=color, label=name)
 
     axis.set_title("Color histogram")
+    axis.set_xlabel("Pixel intensity")
+    axis.set_ylabel("Proportion of pixels (%)")
+    axis.legend(title="color Channel", fontsize=7)
 
 
-def show_results(image, results):
+def show_results(image, mask, results):
     fig, axes = plt.subplots(2, 4, figsize=(16, 8))
 
     axes.flat[0].imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
@@ -122,14 +142,14 @@ def show_results(image, results):
         axis.set_title(name)
         axis.axis("off")
 
-    histogram(image, axes.flat[6])
+    histogram(image, mask, axes.flat[6])
     axes.flat[7].axis("off")
 
     plt.tight_layout()
     plt.show()
 
 
-def save_results(image, results, output_dir, name, mask_only=False):
+def save_results(image, mask, results, output_dir, name, mask_only=False):
     os.makedirs(output_dir, exist_ok=True)
 
     for effect, result in results.items():
@@ -141,7 +161,7 @@ def save_results(image, results, output_dir, name, mask_only=False):
 
     if not mask_only:
         fig, axis = plt.subplots()
-        histogram(image, axis)
+        histogram(image, mask, axis)
 
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, name + "_Color_histogram.png"))
@@ -162,8 +182,8 @@ if args.image:
     image = cv2.imread(args.image)
 
     if image is not None:
-        results = transform(image)
-        show_results(image, results)
+        results, mask = transform(image)
+        show_results(image, mask, results)
     else:
         print("Image not found")
 
@@ -191,10 +211,12 @@ elif args.src:
                 image = cv2.imread(path)
 
                 if image is not None:
-                    results = transform(image)
+                    results, mask = transform(image)
                     name = os.path.splitext(filename)[0]
 
-                    save_results(image, results, output_dir, name, args.mask)
+                    save_results(
+                        image, mask, results, output_dir, name, args.mask
+                    )
                     count += 1
 
     print(count, "images processed")
