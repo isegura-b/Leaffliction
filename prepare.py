@@ -1,4 +1,4 @@
-"""Copia los originales en train (80%) y validation (20%), con semilla 42."""
+# Copia los originales en train (80%) y validation (20%), con semilla 42.
 
 import argparse
 from pathlib import Path
@@ -9,7 +9,7 @@ from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
 def prepare_dataset(source="leaves/images", destination="prepared"):
-    """Crea una división reproducible sin modificar los originales."""
+    # Crea una división reproducible sin modificar los originales.
     source = Path(source).resolve()
     destination = Path(destination).resolve()
     if (source == destination or source in destination.parents
@@ -52,7 +52,10 @@ def prepare_dataset(source="leaves/images", destination="prepared"):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="Copia los originales en train (80%) y validation (20%), "
+                    "con semilla 42."
+    )
     parser.add_argument("source", nargs="?", default="leaves/images")
     parser.add_argument("destination", nargs="?", default="prepared")
     args = parser.parse_args()
