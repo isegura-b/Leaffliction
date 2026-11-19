@@ -30,6 +30,7 @@ Thumbs.db
 
 # Dataset
 # leaves/
+prepared/
 augmented_directory/
 transformations/
 

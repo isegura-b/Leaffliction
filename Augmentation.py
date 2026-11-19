@@ -3,11 +3,10 @@ import os
 import sys
 import cv2
 import random
-import shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
-OUTPUT = "augmented_directory"
+TRAIN = "prepared/train"
 EFFECTS = ["Flip", "Rotate", "Skew", "Shear", "Crop", "Distortion"]
 
 
@@ -88,17 +87,10 @@ def balance_dataset(directory):
 
     target = max(len(images) for images in classes.values())
 
-    if os.path.exists(OUTPUT):
-        shutil.rmtree(OUTPUT)
-
     print("\nTarget:", target, "images per class\n")
 
     for disease, images in classes.items():
-        destination = os.path.join(OUTPUT, disease)
-        os.makedirs(destination, exist_ok=True)
-
-        for image_path in images:
-            shutil.copy2(image_path, destination)
+        destination = os.path.join(directory, disease)
 
         missing = target - len(images)
 
@@ -111,7 +103,6 @@ def balance_dataset(directory):
 
             name = os.path.splitext(os.path.basename(image_path))[0]
             filename = name + "_" + effect + "_" + str(i + 1) + ".jpg"
-
             cv2.imwrite(os.path.join(destination, filename), result)
 
         print(
@@ -121,17 +112,14 @@ def balance_dataset(directory):
             target
         )
 
-    print("\nBalanced dataset saved in", OUTPUT)
+    print("\nBalanced dataset saved in", directory)
 
     first_image = cv2.imread(next(iter(classes.values()))[0])
     display(first_image)
 
 
-if len(sys.argv) != 2:
-    print("Usage: python Augmentation.py directory")
-    sys.exit(1)
-
-if os.path.isdir(sys.argv[1]):
-    balance_dataset(sys.argv[1])
-else:
-    print("Invalid directory")
+if __name__ == "__main__":
+    if not os.path.isdir(TRAIN):
+        print("Error: primero ejecuta prepare.py para crear prepared/train/.")
+        sys.exit(1)
+    balance_dataset(TRAIN)

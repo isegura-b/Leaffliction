@@ -204,6 +204,37 @@ Leaffliction/
 
 ## Classification preparation
 
+Review and remove duplicate originals before generating the definitive split.
+Your image-processing teammate is responsible for this review and augmentation.
+
+Create a reproducible split (seed 42), copying 80% of each class to
+`prepared/train/` and the remainder to `prepared/validation/`:
+
+```bash
+python prepare.py
+```
+
+`leaves/images/` is preserved. The destination must not exist: the script refuses
+to overwrite a previous split. Optional arguments select source and destination:
+`python prepare.py leaves/images prepared_reviewed`.
+Counts use `round(0.8 * class_size)` for training, with the remainder for validation.
+Classes are the folders containing images, including those nested under
+`Apple/` and `Grape/`. Output is flattened to `train/<disease>/` and
+`validation/<disease>/` so the loader identifies the eight diseases.
+
+Load the prepared directories without splitting again:
+
+```python
+from ml.dataset import get_dataloaders
+
+training_loader, validation_loader = get_dataloaders("prepared")
+```
+
+Apply augmentation only to `prepared/train/`, keeping the class folder names.
+If augmentation produces a separate directory, use its class folders as the final
+`train/` directory beside `validation/`; the loader does not rebalance or split.
+Never augment validation. Generated `prepared/` data is ignored by Git.
+
 Before training a classification model, the original dataset must be divided into Training and Validation sets.
 
 Augmentation must only be applied to Training.

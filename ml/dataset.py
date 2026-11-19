@@ -1,8 +1,8 @@
-"""Carga y divide el dataset."""
+"""Carga los conjuntos de entrenamiento y validación preparados."""
 
-from random import Random
+from pathlib import Path
 
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
 from .transforms import get_transforms
@@ -13,52 +13,19 @@ def load_dataset(dataset_path, transform=None):
     return ImageFolder(root=dataset_path, transform=transform)
 
 
-def split_dataset(dataset_path, training_transform=None,
-                  validation_transform=None):
-    """Divide cada clase: 80% para entrenar y 20% para validar."""
+def get_dataloaders(dataset_path="prepared", training_transform=None,
+                    validation_transform=None):
+    """Carga train/ y validation/ en lotes de 32, sin dividirlos."""
     if training_transform is None:
         training_transform = get_transforms()
     if validation_transform is None:
         validation_transform = get_transforms()
 
-    dataset = load_dataset(dataset_path, training_transform)
-    validation_dataset = load_dataset(dataset_path, validation_transform)
-    random = Random(42)  # Para que la división sea siempre la misma.
-    training_indices = []
-    validation_indices = []
-
-    for label in range(len(dataset.classes)):
-        indices = [
-            index for index, target in enumerate(dataset.targets)
-            if target == label
-        ]
-        random.shuffle(indices)
-        split = round(len(indices) * 0.8)
-        training_indices.extend(indices[:split])
-        validation_indices.extend(indices[split:])
-
-    return (
-        Subset(dataset, training_indices),
-        Subset(validation_dataset, validation_indices),
-    )
-
-
-def get_dataloaders(dataset_path, training_transform=None,
-                    validation_transform=None):
-    """Carga lotes de 32 imágenes para entrenar y validar."""
-    training, validation = split_dataset(
-        dataset_path, training_transform, validation_transform
-    )
-    training_loader = DataLoader(
-        training,
-        batch_size=32,
-        shuffle=True,
-        num_workers=0,
-    )
-    validation_loader = DataLoader(
-        validation,
-        batch_size=32,
-        shuffle=False,
-        num_workers=0,
-    )
+    dataset_path = Path(dataset_path)
+    training = load_dataset(dataset_path / "train", training_transform)
+    validation = load_dataset(dataset_path / "validation", validation_transform)
+    if training.class_to_idx != validation.class_to_idx:
+        raise ValueError("Train y validation deben tener las mismas clases.")
+    training_loader = DataLoader(training, batch_size=32, shuffle=True)
+    validation_loader = DataLoader(validation, batch_size=32, shuffle=False)
     return training_loader, validation_loader
