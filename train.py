@@ -1,6 +1,7 @@
 
 import argparse
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 import torch
 
 from ml.dataset import get_dataloaders
@@ -24,6 +25,15 @@ def main():
     ):
         parser.error("Faltan train/ o validation/. Ejecuta prepare.py.")
 
+    effects = ("Flip", "Rotate", "Skew", "Shear", "Crop", "Distortion")
+    augmented_images = [
+        image for image in (args.directory / "train").rglob("*")
+        if image.is_file() and image.suffix.lower() == ".jpg"
+        and any(f"_{effect}" in image.stem for effect in effects)
+    ]
+    if not augmented_images:
+        parser.error("Faltan las imágenes aumentadas. Ejecuta Augmentation.py.")
+
     # Cargar imágenes.
     try:
         train_loader, validation_loader = get_dataloaders(args.directory)
@@ -31,8 +41,8 @@ def main():
         parser.error(f"No se pueden cargar las imágenes: {error}")
 
     classes = train_loader.dataset.classes
-    if len(classes) != 8:
-        parser.error("Se necesitan ocho clases de enfermedades.")
+    if len(classes) < 2:
+        parser.error("Se necesitan mas de dos clases de enfermedades.")
 
     # Crear y entrenar la CNN.
     model = create_model()
@@ -45,6 +55,13 @@ def main():
     }, "model.pth")
 
     print("Modelo guardado en model.pth")
+
+    with ZipFile("Leaffliction.zip", "w", ZIP_DEFLATED) as archive:
+        archive.write("model.pth")
+        for image in augmented_images:
+            archive.write(image, image.relative_to(args.directory))
+
+    print("Modelo e imágenes aumentadas guardados en Leaffliction.zip")
 
 
 if __name__ == "__main__":

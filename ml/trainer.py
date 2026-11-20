@@ -2,7 +2,7 @@ import torch
 import torch.nn as pt
 
 
-def train_model(model, train_loader, validation_loader, epochs=5,
+def train_model(model, train_loader, validation_loader, epochs=3,
                 learning_rate=0.001):
     # Entrena por lotes y devuelve el modelo con sus pesos actualizados.
     calculate_loss = pt.CrossEntropyLoss()
